@@ -1,0 +1,20 @@
+// This card provides the decay settings for the hidden mesons.
+// See http://home.thep.lu.se/~torbjorn/pythia81html/ParticleDataScheme.html for syntax
+// Please verify that the channels you choose are kinematically allowed for the meson mass you selected. 
+//
+// In this example, we decay each dark meson two 2 dark photons (pdg code 999998) which each in turn decay to SM fermions
+// The dark photon branching ratios are mass dependent, see e.g. arxiv:1505.07459. Values used here are approximate.
+// The value for the dark photon mass was chosen to maximize the branching ratio to hadronic final states (pi+ pi-)
+//
+// Written by Simon Knapen on 11/02/2019
+
+// define the dark photon with mass 0.7 GeV
+999998:all = GeneralResonance void 1 0 0 0.7 0.001 0.0 0.0 0.0
+
+// define dark meson decays
+999999:addChannel = 1 1.0 101 999998 999998 // 100% branching ratio to pair of dark photons
+
+// define dark photon decays
+999998:addChannel = 1 0.15 101 11 -11 // 15% branching ratio to e+ e-
+999998:addChannel = 1 0.15 101 13 -13 // 15% branching ratio to mu+ mu-
+999998:addChannel = 1 0.7 101 211 -211 // 70% branching ratio to pi+ pi-

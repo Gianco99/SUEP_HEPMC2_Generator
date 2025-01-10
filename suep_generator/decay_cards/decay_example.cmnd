@@ -1,0 +1,9 @@
+// This card provides the decay settings for the hidden mesons.
+// See http://home.thep.lu.se/~torbjorn/pythia81html/ParticleDataScheme.html for syntax
+// Please verify that the channels you choose are kinematically allowed for the meson mass you selected. 
+//
+// This particular example is meant for illustration only, and does not necessarily represent a realistic model
+//
+// Written by Simon Knapen on 11/02/2019
+ 
+999999:addChannel = 1 1.0 101 1 -1 // 100% branching ratio to u ubar  
