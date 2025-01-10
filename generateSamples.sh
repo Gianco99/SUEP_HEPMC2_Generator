@@ -121,9 +121,9 @@ echo ""
 
 # Loop to generate the random seeds and run the Docker container
 for ((i=1; i<=num_runs; i++)); do
-  # Generate a random seed using /dev/urandom
-  random_seed=$(od -An -N4 -tu4 < /dev/urandom | tr -d ' ')
-  
+  # Generate a random seed
+  random_seed=$RANDOM
+    
   # Define the output file name with the random seed
   output_file="${random_seed}.hepmc"
   
