@@ -78,13 +78,15 @@ int main(int argc, char *argv[]) {
   //Settings for the Pythia object
   pythia.readString("Beams:eCM = 13000.");
   pythia.readString("HiggsSM:all = off"); //All SM major Higgs production modes
-  pythia.readString("HiggsSM:ffbar2HZ = on");
-  pythia.readString("HiggsSM:ffbar2HW = off");
-  pythia.readString("HiggsSM:ffbar2HW = off");
+  pythia.readString("HiggsSM:ffbar2HZ = off");
+  pythia.readString("HiggsSM:ffbar2HW = on");  
   pythia.readString("25:m0 = "+tostr(mh)); // set the mass of "Higgs" scalar
-  pythia.readString("23:onMode = off");
-  pythia.readString("23:onIfAny = 11 13 15");
-  pythia.readString("23:mMin = 0.1");
+  pythia.readString("24:onMode = off");    // W⁺
+  pythia.readString("-24:onMode = off");   // W⁻
+  pythia.readString("24:onIfAny = 11 13 15");    // W⁺ → e⁺νₑ, μ⁺ν_μ, τ⁺ν_τ
+  pythia.readString("-24:onIfAny = -11 -13 -15"); // W⁻ → e⁻ν̄ₑ, μ⁻ν̄_μ, τ⁻ν̄_τ
+  pythia.readString("24:mMin = 0.1");    // W⁺
+  pythia.readString("-24:mMin = 0.1");   // W⁻
   /*
   pythia.readString("25:0:onMode=1");
   pythia.readString("25:1:onMode=0");
