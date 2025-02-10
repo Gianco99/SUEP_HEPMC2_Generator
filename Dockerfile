@@ -1,5 +1,6 @@
 # Use a lightweight base image
-FROM alpine:latest
+#FROM alpine:latest
+FROM public.ecr.aws/docker/library/alpine:latest
 
 # Install required packages
 RUN apk add --no-cache \
