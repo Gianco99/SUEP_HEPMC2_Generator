@@ -121,8 +121,8 @@ echo ""
 
 # Loop to generate the random seeds and run the Docker container
 for ((i=1; i<=num_runs; i++)); do
-  # Generate a random seed using /dev/urandom
-  random_seed=$(od -An -N4 -tu4 < /dev/urandom | tr -d ' ')
+  # Generate a random seed
+  random_seed=$(( ( RANDOM * RANDOM ) % 2147483647 + 1 ))
   
   # Define the output file name with the random seed
   output_file="${random_seed}.hepmc"
@@ -136,6 +136,12 @@ for ((i=1; i<=num_runs; i++)); do
   if [[ $? -ne 0 ]]; then
     echo "Error: Docker run failed for seed $random_seed."
     continue
+  fi
+
+  if [[ ! -s "${output_dir}/${output_file}" ]]; then
+  echo "Warning: ${output_file} is empty. Skipping copy."
+  rm -f "${output_dir}/${output_file}"
+  continue
   fi
   
   # Copy the output to EOS with the random seed in the file name
