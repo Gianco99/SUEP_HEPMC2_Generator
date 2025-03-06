@@ -2,8 +2,8 @@
 
 # Default values
 DEFAULT_DOCKER_IMAGE="suep-generator"
-DEFAULT_NUM_RUNS=1
-DEFAULT_EVENTS=100
+DEFAULT_NUM_RUNS=500
+DEFAULT_EVENTS=2000
 
 # Function to display usage
 usage() {

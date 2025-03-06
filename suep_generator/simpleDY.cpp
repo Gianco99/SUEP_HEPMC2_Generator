@@ -42,8 +42,9 @@ int main(int argc, char *argv[]) {
     pythia.readString("23:onIfAny = 11 13 15");
 
     // Exclude very low-mass gamma* region, you could do:
-    // pythia.readString("PhaseSpace:mHatMin = 40.");
-
+    //pythia.readString("23:mMin = 50.");
+    pythia.readString("PhaseSpace:mHatMin = 50.");
+    
     // Random seed settings
     pythia.readString("Random:setSeed = on");
     pythia.readString("Random:seed = " + seedStr);

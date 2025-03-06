@@ -94,3 +94,16 @@ clean:
 	rm -f weakbosons.lhe; rm -f Pythia8.promc; rm -f hist.root;\
 	rm -f *~; rm -f \#*; rm -f core*; rm -f *Dct.*; rm -f *.so;
 	@rm suep_twosteps suep_userhook *.o
+
+################################################################################
+# Build rule for simpleDY.
+################################################################################
+simpleDY: simpleDY.cpp $(PREFIX_LIB)/libpythia8.a
+ifeq ($(HEPMC2_USE),true)
+	$(CXX) $^ -o $@ \
+	    -I$(HEPMC2_INCLUDE) \
+	    $(CXX_COMMON) \
+	    -L$(HEPMC2_LIB) -Wl,-rpath,$(HEPMC2_LIB) -lHepMC
+else
+	@echo "Error: simpleDY requires HEPMC2"
+endif
