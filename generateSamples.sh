@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Default values
-DEFAULT_DOCKER_IMAGE="suep-generator"
+DEFAULT_DOCKER_IMAGE="suep-generator-WH"
 DEFAULT_INPUT_FILE="decay_darkphoton_hadronic.cmnd"
 DEFAULT_mD=3.0
 DEFAULT_T=3.0
