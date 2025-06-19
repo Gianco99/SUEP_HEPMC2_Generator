@@ -56,14 +56,7 @@ WORKDIR $PYTHIA8/SUEP
 COPY ./suep_generator/* .
 
 # Modify Makefile to include suep_main target
-RUN cp $PYTHIA8/examples/Makefile ./Makefile && \
-    sed -i '/^all:/i suep_main: suep_main.cxx DecayToSUEP.cxx suep_shower.cxx $(PREFIX_LIB)/libpythia8.a' Makefile && \
-    sed -i '/^suep_main:/a ifeq ($(HEPMC2_USE),true)' Makefile && \
-    sed -i '/^ifeq ($(HEPMC2_USE),true)/a\\
-\t$(CXX) suep_main.cxx DecayToSUEP.cxx suep_shower.cxx -o suep_main $(CXX_COMMON) \\\n\t-I$(HEPMC2_INCLUDE) -L$(HEPMC2_LIB) -Wl,-rpath,$(HEPMC2_LIB) -lHepMC \\\n\t$(GZIP_INC) $(GZIP_FLAGS)' Makefile && \
-    sed -i '/$(GZIP_FLAGS)/a\\
-else\n\t@echo "Error: suep_main requires HEPMC2"\nendif' Makefile && \
-    cat Makefile
+RUN cp $PYTHIA8/examples/Makefile ./Makefile
 
 # Replace paths in Makefile.inc
 RUN sed -i 's|/afs/cern.ch/work/b/bmaier/public/xMaurizio/pythia/pythia8244/|/usr/local/pythia8312/|g' Makefile.inc

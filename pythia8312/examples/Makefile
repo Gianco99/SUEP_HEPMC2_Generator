@@ -195,3 +195,12 @@ clean:
 	rm -f *.hepmc; rm -f *.yoda; rm -f *.root; rm -f *.pcm;\
 	rm -f weakbosons.lhe; rm -f particles.xml; rm -f settings.xml;\
 	rm -rf amcatnlorun; rm -rf helaconiarun; rm -rf madgraphrun;
+
+suep_main: suep_main.cxx DecayToSUEP.cxx suep_shower.cxx $(PREFIX_LIB)/libpythia8.a
+ifeq ($(HEPMC2_USE),true)
+	$(CXX) suep_main.cxx DecayToSUEP.cxx suep_shower.cxx -o suep_main $(CXX_COMMON) \
+	-I$(HEPMC2_INCLUDE) -L$(HEPMC2_LIB) -Wl,-rpath,$(HEPMC2_LIB) -lHepMC \
+	$(GZIP_INC) $(GZIP_FLAGS)
+else
+	@echo "Error: suep_main requires HEPMC2"
+endif
