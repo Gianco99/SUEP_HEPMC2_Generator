@@ -5,14 +5,14 @@
 # --with-hepmc2=/cvmfs/cms.cern.ch/slc7_amd64_gcc820/external/hepmc/2.06.07/
 
 # Install directory prefixes.
-PREFIX_BIN=/afs/cern.ch/work/b/bmaier/public/xMaurizio/pythia/pythia8244/bin
-PREFIX_INCLUDE=/afs/cern.ch/work/b/bmaier/public/xMaurizio/pythia/pythia8244/include
-PREFIX_LIB=/afs/cern.ch/work/b/bmaier/public/xMaurizio/pythia/pythia8244/lib
-PREFIX_SHARE=/afs/cern.ch/work/b/bmaier/public/xMaurizio/pythia/pythia8244/share/Pythia8
+PREFIX_BIN     = /usr/local/pythia8312/bin
+PREFIX_INCLUDE = /usr/local/pythia8312/include
+PREFIX_LIB     = /usr/local/pythia8312/lib
+PREFIX_SHARE   = /usr/local/pythia8312/share/Pythia8
 
 # Compilation flags (see ./configure --help for further documentation).
 ENABLE_SHARED=false
-CXX=/cvmfs/sft.cern.ch/lcg/releases/gcc/8.3.0-cebb0/x86_64-centos7/bin/g++
+CXX=g++
 CXX_COMMON=-O2  -pedantic -W -Wall -Wshadow -fPIC
 CXX_SHARED=-shared
 CXX_SONAME=-Wl,-soname,
