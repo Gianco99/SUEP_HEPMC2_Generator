@@ -102,8 +102,16 @@ elif [[ -z "${executable_path}" ]]; then
   executable_path="/usr/local/pythia8312/SUEP/${executable}"
 fi
 
-# Prepend the EOS prefix
-eos_dir="root://eosuser.cern.ch/${eos_dir}"
+# Normalize EOS path: if not already root://, choose appropriate host
+if [[ "$eos_dir" != root://* ]]; then
+  if [[ "$eos_dir" == /eos/user/* ]]; then
+    eos_dir="root://eosuser.cern.ch${eos_dir}"
+  elif [[ "$eos_dir" == /eos/cms/* ]]; then
+    eos_dir="root://eoscms.cern.ch${eos_dir}"
+  else
+    eos_dir="root://eosuser.cern.ch/${eos_dir#/}"
+  fi
+fi
 
 # Set default output_dir if not provided
 if [[ -z "$output_dir" ]]; then
@@ -131,6 +139,38 @@ echo "Flavor/Mode: $mode (executable: $executable)"
 echo "Entrypoint Path: $executable_path"
 echo ""
 
+run_in_container() {
+  local outfile="$1"
+  local seed="$2"
+  local nevt="$3"
+
+  # Prefer Apptainer/Singularity on batch nodes; fall back to Docker/Podman
+  if command -v apptainer >/dev/null 2>&1; then
+    echo "Using apptainer with image: docker://${docker_image}"
+    apptainer exec -B "${output_dir}:/app/output" "docker://${docker_image}" \
+      "${executable_path}" "/app/output/${outfile}" "${seed}" "${nevt}"
+    return $?
+  elif command -v singularity >/dev/null 2>&1; then
+    echo "Using singularity with image: docker://${docker_image}"
+    singularity exec -B "${output_dir}:/app/output" "docker://${docker_image}" \
+      "${executable_path}" "/app/output/${outfile}" "${seed}" "${nevt}"
+    return $?
+  elif command -v docker >/dev/null 2>&1; then
+    echo "Using docker with image: ${docker_image}"
+    docker run --rm -v "${output_dir}:/app/output" --entrypoint "${executable_path}" \
+      "${docker_image}" "/app/output/${outfile}" "${seed}" "${nevt}"
+    return $?
+  elif command -v podman >/dev/null 2>&1; then
+    echo "Using podman with image: ${docker_image}"
+    podman run --rm -v "${output_dir}:/app/output" --entrypoint "${executable_path}" \
+      "${docker_image}" "/app/output/${outfile}" "${seed}" "${nevt}"
+    return $?
+  else
+    echo "Error: No container runtime found (apptainer/singularity/docker/podman)." >&2
+    return 127
+  fi
+}
+
 # Loop to generate the random seeds and run the Docker container
 for ((i=1; i<=num_runs; i++)); do
   # Generate a random seed
@@ -141,12 +181,9 @@ for ((i=1; i<=num_runs; i++)); do
   
   echo "Run #$i: Seed=$random_seed, Output File=$output_file"
   
-  # Run the Docker command with the random seed
-  docker run --rm -v "${output_dir}:/app/output" --entrypoint "${executable_path}" -it "${docker_image}" "/app/output/${output_file}" "${random_seed}" "${events}"
-  
-  # Check if Docker run was successful
-  if [[ $? -ne 0 ]]; then
-    echo "Error: Docker run failed for seed $random_seed."
+  # Run using whichever container runtime is available
+  if ! run_in_container "${output_file}" "${random_seed}" "${events}"; then
+    echo "Error: Container run failed for seed $random_seed."
     continue
   fi
 
