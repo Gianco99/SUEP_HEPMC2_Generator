@@ -68,7 +68,7 @@ def write_condor_submit(sub_path: str, scripts_dir: str):
     lines.append(f"Output  = {os.path.join(scripts_dir, '$(Cluster).$(Process).out')}")
     lines.append(f"Error   = {os.path.join(scripts_dir, '$(Cluster).$(Process).err')}")
     lines.append("")
-    lines.append(f"queue filename matching ({scripts_dir}/*.sh)")
+    lines.append(f"queue filename matching ({scripts_dir}/job_*.sh)")
     with open(sub_path, "w") as f:
         f.write("\n".join(lines))
 
