@@ -9,17 +9,17 @@ DEFAULT_EVENTS_PER_JOB = 50_000
 DEFAULT_RUNS = 1
 DEFAULT_DOCKER_IMAGE = "suep-generator:latest"
 DEFAULT_EXEC_PATHS = {
-    "mu":  "/usr/local/pythia8312/SUEP/JPsi_DiMu",
-    "ele": "/usr/local/pythia8312/SUEP/JPsi_DiEle",
+    "mu":  "/usr/local/pythia8312/SUEP/ZPrime_DiMu",
+    "ele": "/usr/local/pythia8312/SUEP/ZPrime_DiEle",
 }
 DEFAULT_EOS_DEST = {
-    "mu":  "/eos/user/g/gdecastr/HepMCSamples/JPsiDiMu",
-    "ele": "/eos/user/g/gdecastr/HepMCSamples/JPsiDiEle",
+    "mu":  "/eos/user/g/gdecastr/HepMCSamples/ZPrimeDiMu",
+    "ele": "/eos/user/g/gdecastr/HepMCSamples/ZPrimeDiEle",
 }
-DEFAULT_OUT_SCRIPT_DIR = os.path.expanduser("~/JPsi_CondorJobs")
+DEFAULT_OUT_SCRIPT_DIR = os.path.expanduser("~/ZPrime_CondorJobs")
 DEFAULT_LOCAL_OUT_DIRS = {
-    "mu":  "output_JPsiDiMu",
-    "ele": "output_JPsiDiEle",
+    "mu":  "output_ZPrimeDiMu",
+    "ele": "output_ZPrimeDiEle",
 }
 
 # Condor bits
@@ -32,20 +32,20 @@ def write_wrapper(path: str, image: str, local_out_rel: str, eos_dest: str, mode
     with open(path, "w") as sh:
         sh.write("#!/bin/bash\n")
         sh.write("set -euo pipefail\n")
-        sh.write("echo \"[$(date)] Starting JPsi job ($HOSTNAME)\"\n")
+        sh.write("echo \"[$(date)] Starting ZPrime job ($HOSTNAME)\"\n")
         sh.write("echo \"Scratch: ${_CONDOR_SCRATCH_DIR:-$PWD}\"\n")
         sh.write("SCRATCH_DIR=\"${_CONDOR_SCRATCH_DIR:-$PWD}\"\n")
         sh.write(f"OUTDIR=\"$SCRATCH_DIR/{local_out_rel}\"\n")
         sh.write("mkdir -p \"$OUTDIR\"\n")
-        # Export the in-image binary path for generateJPsi.sh to consume
+        # Export the in-image binary path for generateZPrime.sh to consume
         sh.write(f"export EXECUTABLE_PATH='{exec_path}'\n")
-        # If provided, point generateJPsi.sh to a local .sif image (avoids docker.io pulls)
+        # If provided, point generateZPrime.sh to a local .sif image (avoids docker.io pulls)
         if sif_path is not None:
             sh.write(f"export SIF_IMAGE='{sif_path}'\n")
-            sh.write("bash generateJPsi.sh "
+            sh.write("bash generateZPrime.sh "
                      f"-i '{image}' -o \"$OUTDIR\" -e '{eos_dest}' -n 1 -c {events_per_job} -m {mode} -s '{sif_path}'\n")
         else:
-            sh.write("bash generateJPsi.sh "
+            sh.write("bash generateZPrime.sh "
                      f"-i '{image}' -o \"$OUTDIR\" -e '{eos_dest}' -n 1 -c {events_per_job} -m {mode}\n")
         sh.write("status=$?; echo \"[$(date)] Exit status: $status\"; exit $status\n")
     os.chmod(path, 0o755)
@@ -56,9 +56,10 @@ def write_condor_submit(sub_path: str, scripts_dir: str, suppress_logs: bool = F
     lines.append("universe              = vanilla")
     lines.append(f"+JobFlavour          = {JOB_FLAVOUR}")
     lines.append("getenv                = True")
+    lines.append("use_x509userproxy     = True")
     lines.append("transfer_executable   = True")
     # Ship the generate script to the worker
-    lines.append("transfer_input_files  = generateJPsi.sh")
+    lines.append("transfer_input_files  = generateZPrime.sh")
     lines.append("executable            = $(filename)")
     lines.append("arguments             = \n")
     lines.append("")
@@ -77,7 +78,7 @@ def write_condor_submit(sub_path: str, scripts_dir: str, suppress_logs: bool = F
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Create Condor jobs to run generateJPsi.sh with N runs of M events each")
+    ap = argparse.ArgumentParser(description="Create Condor jobs to run generateZPrime.sh with N runs of M events each")
     ap.add_argument("--mode", choices=["mu", "ele"], default=DEFAULT_MODE, help="Channel to generate")
     ap.add_argument("--events", type=int, default=DEFAULT_EVENTS_PER_JOB, help="Attempted events per job")
     ap.add_argument("--runs", type=int, default=DEFAULT_RUNS, help="Number of jobs to create and queue")
@@ -87,7 +88,7 @@ def main():
     ap.add_argument("--out-script-dir", default=DEFAULT_OUT_SCRIPT_DIR, help="Where to write wrapper scripts and submit file")
     ap.add_argument("--local-out-dir", default=None, help="Relative temp output dir; defaults per mode (stored in Condor scratch)")
     ap.add_argument("--eos-dest", default=None, help="EOS destination directory; defaults per mode")
-    ap.add_argument("--gen-script", default="generateJPsi.sh", help="Path to generateJPsi.sh to ship with each job")
+    ap.add_argument("--gen-script", default="generateZPrime.sh", help="Path to generateZPrime.sh to ship with each job")
     ap.add_argument("--no-logs", action="store_true", help="Send Condor Log/Output/Error to /dev/null instead of files")
     args = ap.parse_args()
 
@@ -101,11 +102,11 @@ def main():
     jobdir = os.path.join(args.out_script_dir, mode)
     os.makedirs(jobdir, exist_ok=True)
 
-    # Stage generateJPsi.sh into the jobdir
+    # Stage generateZPrime.sh into the jobdir
     gen_src = os.path.abspath(args.gen_script)
     if not os.path.isfile(gen_src):
-        raise FileNotFoundError(f"generateJPsi.sh not found at: {gen_src}")
-    gen_dst = os.path.join(jobdir, "generateJPsi.sh")
+        raise FileNotFoundError(f"generateZPrime.sh not found at: {gen_src}")
+    gen_dst = os.path.join(jobdir, "generateZPrime.sh")
     shutil.copy2(gen_src, gen_dst)
     os.chmod(gen_dst, 0o755)
 
@@ -134,11 +135,11 @@ def main():
     print(f"Runs (jobs)          : {args.runs}")
     print(f"Image                : {args.image}")
     print(f"Exec path in image   : {exec_path}")
-    print(f"Container spec        : {args.sif or 'docker://'+args.image}")
+    print(f"Container spec       : {args.sif or 'docker://'+args.image}")
     print(f"Temp out (scratch)   : {local_out_rel}")
     print(f"EOS destination      : {eos_dest}")
     print(f"Scripts directory    : {jobdir}")
-    print(f"Condor logs           : {'/dev/null' if args.no_logs else jobdir}")
+    print(f"Condor logs          : {'/dev/null' if args.no_logs else jobdir}")
     print(f"Submit with          : condor_submit {sub_path}")
 
 

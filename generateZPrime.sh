@@ -13,7 +13,7 @@ usage() {
   echo "Options:"
   echo "  -i IMAGE         Docker image (default: ${DEFAULT_DOCKER_IMAGE})"
   echo "  -o OUTPUT_DIR    Output directory (default: $(pwd)/output)"
-  echo "  -e EOS_DIR       EOS directory (required)"
+  echo "  -e EOS_DIR       EOS directory (default by mode: /eos/.../ZPrimeDiMu or /eos/.../ZPrimeDiEle)"
   echo "  -n NUM_RUNS      Number of runs (default: ${DEFAULT_NUM_RUNS})"
   echo "  -c EVENTS        Events per run (default: ${DEFAULT_EVENTS})"
   echo "  -m MODE          Channel: mu or ele (default: ${DEFAULT_MODE})"
@@ -22,7 +22,7 @@ usage() {
   echo "  -h               Display this help message"
   echo ""
   echo "Example:"
-  echo "  $0 -i my-image -o /path/to/output -e /eos/user/g/gdecastr/SUEP/JPsi -n 100 -c 3000 -m mu -x /usr/local/pythia8312/SUEP/JPsi_DiMu -s /eos/user/g/gdecastr/HepMCSamples/singularityImages/suep-generator.sif"
+  echo "  $0 -i suep-generator -o /path/to/output -e /eos/user/g/gdecastr/HepMCSamples/ZPrimeDiMu -n 100 -c 3000 -m mu -x /usr/local/pythia8312/SUEP/ZPrime_DiMu -s /eos/user/g/gdecastr/HepMCSamples/singularityImages/suep-generator.sif"
   exit 1
 }
 
@@ -81,10 +81,13 @@ while [[ "$#" -gt 0 ]]; do
   esac
 done
 
-# Check if EOS_DIR is provided
+# If EOS_DIR not provided, choose default by mode
 if [[ -z "$eos_dir" ]]; then
-  echo "Error: EOS_DIR (-e) is required."
-  usage
+  if [[ "$mode" =~ ^(mu|MU|Mu)$ ]]; then
+    eos_dir="/eos/user/g/gdecastr/HepMCSamples/ZPrimeDiMu"
+  else
+    eos_dir="/eos/user/g/gdecastr/HepMCSamples/ZPrimeDiEle"
+  fi
 fi
 
 # Expect EOS_DIR to be a plain filesystem path (e.g. /eos/user/...)
@@ -105,10 +108,10 @@ fi
 # Choose executable based on mode
 case "$mode" in
   mu|MU|Mu)
-    executable="JPsi_DiMu"
+    executable="ZPrime_DiMu"
     ;;
   ele|ELE|Ele|electron|Electron|EE|ee)
-    executable="JPsi_DiEle"
+    executable="ZPrime_DiEle"
     ;;
   *)
     echo "Error: invalid mode '$mode'. Use 'mu' or 'ele'."
