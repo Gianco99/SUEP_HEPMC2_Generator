@@ -118,14 +118,21 @@ else
   container_spec="docker://${docker_image}"
 fi
 
-# Normalize EOS path: if not already root://, choose appropriate host
-if [[ "$eos_dir" != root://* ]]; then
+# Normalize EOS path to a full XRootD URL with an absolute path (requires double slash after host).
+# Accepts: /eos/user/... or /eos/cms/... or root://<host>/<path>
+if [[ "$eos_dir" == root://* ]]; then
+  host="${eos_dir#root://}"; host="${host%%/*}"
+  path="${eos_dir#root://$host/}"
+  # Ensure path begins with a single leading slash so final URL is root://host//abs/path
+  path="/${path#/}"
+  eos_dir="root://$host$path"
+else
   if [[ "$eos_dir" == /eos/user/* ]]; then
-    eos_dir="root://eosuser.cern.ch${eos_dir}"
+    eos_dir="root://eosuser.cern.ch//${eos_dir#/}"
   elif [[ "$eos_dir" == /eos/cms/* ]]; then
-    eos_dir="root://eoscms.cern.ch${eos_dir}"
+    eos_dir="root://eoscms.cern.ch//${eos_dir#/}"
   else
-    eos_dir="root://eosuser.cern.ch/${eos_dir#/}"
+    eos_dir="root://eosuser.cern.ch//${eos_dir#/}"
   fi
 fi
 
@@ -237,7 +244,8 @@ for ((i=1; i<=num_runs; i++)); do
   fi
   
   # Copy the output to EOS with the random seed in the file name
-  xrdcp -f "${output_dir}/${output_file}" "${eos_dir}/${output_file}"
+  dest="${eos_dir%/}/${output_file}"
+  xrdcp -f "${output_dir}/${output_file}" "${dest}"
   
   if [[ $? -ne 0 ]]; then
     echo "Error: Failed to copy ${output_file} to EOS."
