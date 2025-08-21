@@ -13,8 +13,8 @@ DEFAULT_EXEC_PATHS = {
     "ele": "/usr/local/pythia8312/SUEP/JPsi_DiEle",
 }
 DEFAULT_EOS_DEST = {
-    "mu":  "root://eosuser.cern.ch/eos/user/g/gdecastr/HepMCSamples/JPsiDiMu",
-    "ele": "root://eosuser.cern.ch/eos/user/g/gdecastr/HepMCSamples/JPsiDiEle",
+    "mu":  "/eos/user/g/gdecastr/HepMCSamples/JPsiDiMu",
+    "ele": "/eos/user/g/gdecastr/HepMCSamples/JPsiDiEle",
 }
 DEFAULT_OUT_SCRIPT_DIR = os.path.expanduser("~/JPsi_CondorJobs")
 DEFAULT_LOCAL_OUT_DIRS = {

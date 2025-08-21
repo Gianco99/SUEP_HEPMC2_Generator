@@ -87,6 +87,21 @@ if [[ -z "$eos_dir" ]]; then
   usage
 fi
 
+# Expect EOS_DIR to be a plain filesystem path (e.g. /eos/user/...)
+if [[ "$eos_dir" == root://* ]]; then
+  echo "Error: EOS_DIR must be a filesystem path (e.g. /eos/user/...), not an XRootD URL: '$eos_dir'" >&2
+  exit 2
+fi
+# Must be absolute
+if [[ "${eos_dir:0:1}" != "/" ]]; then
+  echo "Error: EOS_DIR must be an absolute path; got '$eos_dir'" >&2
+  exit 2
+fi
+# Ensure destination dir exists (FUSE-mounted EOS)
+if [[ ! -d "$eos_dir" ]]; then
+  mkdir -p "$eos_dir" || { echo "Error: Failed to create EOS directory '$eos_dir'" >&2; exit 2; }
+fi
+
 # Choose executable based on mode
 case "$mode" in
   mu|MU|Mu)
@@ -116,24 +131,6 @@ if [[ -n "${sif_image}" ]]; then
   container_spec="${sif_image}"
 else
   container_spec="docker://${docker_image}"
-fi
-
-# Normalize EOS path to a full XRootD URL with an absolute path (requires double slash after host).
-# Accepts: /eos/user/... or /eos/cms/... or root://<host>/<path>
-if [[ "$eos_dir" == root://* ]]; then
-  host="${eos_dir#root://}"; host="${host%%/*}"
-  path="${eos_dir#root://$host/}"
-  # Ensure path begins with a single leading slash so final URL is root://host//abs/path
-  path="/${path#/}"
-  eos_dir="root://$host$path"
-else
-  if [[ "$eos_dir" == /eos/user/* ]]; then
-    eos_dir="root://eosuser.cern.ch//${eos_dir#/}"
-  elif [[ "$eos_dir" == /eos/cms/* ]]; then
-    eos_dir="root://eoscms.cern.ch//${eos_dir#/}"
-  else
-    eos_dir="root://eosuser.cern.ch//${eos_dir#/}"
-  fi
 fi
 
 # Set default output_dir if not provided
@@ -243,16 +240,13 @@ for ((i=1; i<=num_runs; i++)); do
   continue
   fi
   
-  # Copy the output to EOS with the random seed in the file name
-  dest="//${eos_dir%/}/${output_file}"
-  xrdcp -f "${output_dir}/${output_file}" "${dest}"
-  
-  if [[ $? -ne 0 ]]; then
-    echo "Error: Failed to copy ${output_file} to EOS."
+  # Copy the output into EOS FUSE path with the random seed in the file name
+  dest="${eos_dir%/}/${output_file}"
+  if ! cp -f "${output_dir}/${output_file}" "${dest}"; then
+    echo "Error: Failed to copy ${output_file} to EOS path '${dest}'." >&2
     continue
   fi
-  
-  # Remove the local output file
+  # Remove the local output file after successful copy
   rm -f "${output_dir}/${output_file}"
   
   echo "Run #$i completed successfully."
