@@ -13,8 +13,8 @@ DEFAULT_EXEC_PATHS = {
     "ele": "/usr/local/pythia8312/SUEP/JPsi_DiEle",
 }
 DEFAULT_EOS_DEST = {
-    "mu":  "/eos/user/g/gdecastr/HepMCSamples/JPsiDiMu",
-    "ele": "/eos/user/g/gdecastr/HepMCSamples/JPsiDiEle",
+    "mu":  "root://eosuser.cern.ch/eos/user/g/gdecastr/HepMCSamples/JPsiDiMu",
+    "ele": "root://eosuser.cern.ch/eos/user/g/gdecastr/HepMCSamples/JPsiDiEle",
 }
 DEFAULT_OUT_SCRIPT_DIR = os.path.expanduser("~/JPsi_CondorJobs")
 DEFAULT_LOCAL_OUT_DIRS = {
@@ -51,7 +51,7 @@ def write_wrapper(path: str, image: str, local_out_rel: str, eos_dest: str, mode
     os.chmod(path, 0o755)
 
 
-def write_condor_submit(sub_path: str, scripts_dir: str):
+def write_condor_submit(sub_path: str, scripts_dir: str, suppress_logs: bool = False):
     lines = []
     lines.append("universe              = vanilla")
     lines.append(f"+JobFlavour          = {JOB_FLAVOUR}")
@@ -62,9 +62,14 @@ def write_condor_submit(sub_path: str, scripts_dir: str):
     lines.append("executable            = $(filename)")
     lines.append("arguments             = \n")
     lines.append("")
-    lines.append(f"Log     = {os.path.join(scripts_dir, 'condor.log')}")
-    lines.append(f"Output  = {os.path.join(scripts_dir, '$(Cluster).$(Process).out')}")
-    lines.append(f"Error   = {os.path.join(scripts_dir, '$(Cluster).$(Process).err')}")
+    if suppress_logs:
+        lines.append("Log     = /dev/null")
+        lines.append("Output  = /dev/null")
+        lines.append("Error   = /dev/null")
+    else:
+        lines.append(f"Log     = {os.path.join(scripts_dir, 'condor.log')}")
+        lines.append(f"Output  = {os.path.join(scripts_dir, '$(Cluster).$(Process).out')}")
+        lines.append(f"Error   = {os.path.join(scripts_dir, '$(Cluster).$(Process).err')}")
     lines.append("")
     lines.append(f"queue filename matching ({scripts_dir}/job_*.sh)")
     with open(sub_path, "w") as f:
@@ -83,6 +88,7 @@ def main():
     ap.add_argument("--local-out-dir", default=None, help="Relative temp output dir; defaults per mode (stored in Condor scratch)")
     ap.add_argument("--eos-dest", default=None, help="EOS destination directory; defaults per mode")
     ap.add_argument("--gen-script", default="generateJPsi.sh", help="Path to generateJPsi.sh to ship with each job")
+    ap.add_argument("--no-logs", action="store_true", help="Send Condor Log/Output/Error to /dev/null instead of files")
     args = ap.parse_args()
 
     mode = args.mode
@@ -120,7 +126,7 @@ def main():
 
     # Submit file
     sub_path = os.path.join(jobdir, f"condor_{mode}.sub")
-    write_condor_submit(sub_path, scripts_dir=jobdir)
+    write_condor_submit(sub_path, scripts_dir=jobdir, suppress_logs=args.no_logs)
 
     print("\n=== Job set ready ===")
     print(f"Mode                 : {mode}")
@@ -132,6 +138,7 @@ def main():
     print(f"Temp out (scratch)   : {local_out_rel}")
     print(f"EOS destination      : {eos_dest}")
     print(f"Scripts directory    : {jobdir}")
+    print(f"Condor logs           : {'/dev/null' if args.no_logs else jobdir}")
     print(f"Submit with          : condor_submit {sub_path}")
 
 
