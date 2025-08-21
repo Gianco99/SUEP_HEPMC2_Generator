@@ -54,7 +54,10 @@ def write_condor_submit(sub_path: str, scripts_dir: str):
     lines.append(f"+JobFlavour          = {JOB_FLAVOUR}")
     lines.append("getenv                = True")
     lines.append("use_x509userproxy     = True")  # so xrdcp to EOS works
-    lines.append("x509userproxy         = $ENV(X509_USER_PROXY)")
+    # If a proxy path is present in the submit environment, pin it; otherwise let HTCondor use the default /tmp/x509up_u<uid>
+    proxy_path = os.environ.get("X509_USER_PROXY", "").strip()
+    if proxy_path:
+        lines.append(f"x509userproxy         = {proxy_path}")
     lines.append("transfer_executable   = True")
     # Ship the generate script to the worker
     lines.append("transfer_input_files  = generateJPsi.sh")
