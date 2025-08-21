@@ -60,11 +60,10 @@ WORKDIR $PYTHIA8/SUEP
 # Copy your minimal DY generator into this directory
 COPY ./suep_generator/* .
 
-# Copy the example Makefile from Pythia’s examples and patch it
+# Copy the example Makefile and Makefile.inc from Pythia’s examples and patch the Makefile
 RUN cp $PYTHIA8/examples/Makefile ./Makefile && \
-    cat >> Makefile << 'EOF' && \
-    cat Makefile
-
+    cp $PYTHIA8/examples/Makefile.inc ./Makefile.inc && \
+    cat >> Makefile <<'EOF'
 JPsi_DiEle: JPsi_DiEle.cpp $(PREFIX_LIB)/libpythia8.a
 ifeq ($(HEPMC2_USE),true)
 	$(CXX) JPsi_DiEle.cpp -o JPsi_DiEle $(CXX_COMMON) \
@@ -83,6 +82,9 @@ else
 	@echo "Error: JPsi_DiMu requires HEPMC2"
 endif
 EOF
+
+# (optional) show the final Makefile for debugging
+RUN cat Makefile
 
 # Replace old references in Makefile.inc (if needed)
 RUN sed -i 's|/afs/cern.ch/work/b/bmaier/public/xMaurizio/pythia/pythia8244/|/usr/local/pythia8312/|g' Makefile.inc
