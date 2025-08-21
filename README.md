@@ -31,7 +31,7 @@ docker build -t suep-generator-wh .
 
 As the name implies, we will use `generateSamples.sh` to generate our HEPMC SUEP samples. The arguments of this script are described in detail below:
 
-   * -i: The name of the image (the default is suep-generator-ZH)
+   * -i: The name of the image (the default is suep-generator-zh)
    * -f: The Pythia cards used to define the decay mode of the dark photons (A'). The different cards can be found in the path `SUEP_HEPMC2_Generator/suep_generator/decay_cards`.
    * -mD: The mass of the dark meson - $m_{\phi} \in [2m_{A'}, 8]$ GeV
    * -T: The Boltzmann temperature - $T_D \in [m_{\phi}/4, 4m_{\phi}]$ GeV
