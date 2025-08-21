@@ -22,7 +22,7 @@ This is where the fun begins. There is a file named `DockerFile` which performs 
    * Build Pythia8 with LHAPDF compatibility
    * Compile the SUEP_generator repo against our Pythia install
 
-You can build this Docker image, which we will call `suep-generator-WH`, by running the command below:
+You can build this Docker image, which we will call `suep-generator-wh`, by running the command below:
 
 ```bash
 cd SUEP_HEPMC2_Generator
