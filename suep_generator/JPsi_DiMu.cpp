@@ -14,6 +14,39 @@ using namespace boost::placeholders; // Use the recommended namespace for placeh
 
 using namespace Pythia8;
 
+// Apply JPsi -> mu+ mu- filters similar to CMSSW fragment
+static bool passJPsiMuMu(const Pythia8::Event& ev) {
+    // Kinematic cuts
+    const double minPt = 1.0;   // GeV
+    const double maxPt = 10.0;  // GeV
+    const double maxAbsEta = 2.4;
+
+    for (int i = 0; i < ev.size(); ++i) {
+        if (ev[i].id() != 443) continue; // J/psi (status/resonance not enforced explicitly)
+        int d1 = ev[i].daughter1();
+        int d2 = ev[i].daughter2();
+        if (d1 <= 0 || d2 <= 0) continue; // must have daughters recorded
+
+        bool hasMuPlus = false;
+        bool hasMuMinus = false;
+
+        for (int d = d1; d <= d2; ++d) {
+            if (d < 0 || d >= ev.size()) continue;
+            int id = ev[d].id();
+            if (id == 13 || id == -13) {
+                double pt = ev[d].pT();
+                double eta = ev[d].eta();
+                if (pt >= minPt && pt <= maxPt && std::abs(eta) <= maxAbsEta) {
+                    if (id == 13)  hasMuMinus = true;   // mu-
+                    if (id == -13) hasMuPlus  = true;   // mu+
+                }
+            }
+        }
+        if (hasMuPlus && hasMuMinus) return true; // Found a qualifying JPsi -> mu+ mu-
+    }
+    return false;
+}
+
 int main(int argc, char *argv[]) {
 
     // Make sure we have the correct arguments: output file, random seed, number of events
@@ -34,17 +67,11 @@ int main(int argc, char *argv[]) {
     // Basic setup for 13 TeV collisions
     pythia.readString("Beams:eCM = 13000.");
 
-    // Turn on Drell-Yan production
-    pythia.readString("WeakSingleBoson:ffbar2gmZ = on");
+    // Charmonium (J/psi) production with feed-down; decay only to mu+ mu-
+    pythia.readString("Charmonium:all = on");
+    pythia.readString("443:onMode = off");
+    pythia.readString("443:onIfMatch = 13 -13");
 
-    // Only allow Z-> e, mu, tau
-    pythia.readString("23:onMode = off");
-    pythia.readString("23:onIfAny = 11 13 15");
-
-    // Exclude very low-mass gamma* region, you could do:
-    //pythia.readString("23:mMin = 50.");
-    pythia.readString("PhaseSpace:mHatMin = 50.");
-    
     // Random seed settings
     pythia.readString("Random:setSeed = on");
     pythia.readString("Random:seed = " + seedStr);
@@ -118,11 +145,11 @@ int main(int argc, char *argv[]) {
         isr_X2XG_cNS_dn isr:X2XG:cNS=-2.0,\
         isr_X2XG_cNS_up isr:X2XG:cNS=2.0}");
         
-    pythia.readString("UncertaintyBands:nFlavQ = 4pythia.readString"); // define X=bottom/top in X2XG variations
-    pythia.readString("UncertaintyBands:MPIshowers = onpythia.readString");
-    pythia.readString("UncertaintyBands:overSampleFSR = 10.0pythia.readString");
-    pythia.readString("UncertaintyBands:overSampleISR = 10.0pythia.readString");
-    pythia.readString("UncertaintyBands:FSRpTmin2Fac = 20pythia.readString");
+    pythia.readString("UncertaintyBands:nFlavQ = 4"); // define X=bottom/top in X2XG variations
+    pythia.readString("UncertaintyBands:MPIshowers = on");
+    pythia.readString("UncertaintyBands:overSampleFSR = 10.0");
+    pythia.readString("UncertaintyBands:overSampleISR = 10.0");
+    pythia.readString("UncertaintyBands:FSRpTmin2Fac = 20");
     pythia.readString("UncertaintyBands:ISRpTmin2Fac = 20"); // for consistency with UL and P8.240 set to 20, to be optimized and changed for Run 3 re-MC  
 
     // Initialize Pythia
@@ -137,8 +164,14 @@ int main(int argc, char *argv[]) {
 
         // Generate next event; if failure, skip
         if (!pythia.next()) {
-        std::cerr << "Pythia event generation failed at event " << i << "\n";
-        continue;
+            std::cerr << "Pythia event generation failed at event " << i << "\n";
+            continue;
+        }
+
+        // Apply JPsi -> mu+ mu- filters (pT/eta cuts on daughters)
+        if (!passJPsiMuMu(pythia.event)) {
+            // Skip writing this event if it doesn't satisfy the filters
+            continue;
         }
 
         // Create a new HepMC event
