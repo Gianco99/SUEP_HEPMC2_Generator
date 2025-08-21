@@ -18,10 +18,11 @@ usage() {
   echo "  -c EVENTS        Events per run (default: ${DEFAULT_EVENTS})"
   echo "  -m MODE          Channel: mu or ele (default: ${DEFAULT_MODE})"
   echo "  -x EXE_PATH     In-image executable path (default: /usr/local/pythia8312/SUEP/<exe>)"
+  echo "  -s SIF_PATH     Path to a local .sif image (preferred on batch nodes; overrides docker://<image>)"
   echo "  -h               Display this help message"
   echo ""
   echo "Example:"
-  echo "  $0 -i my-image -o /path/to/output -e /eos/user/g/gdecastr/SUEP/JPsi -n 100 -c 3000 -m mu -x /usr/local/pythia8312/SUEP/JPsi_DiMu"
+  echo "  $0 -i my-image -o /path/to/output -e /eos/user/g/gdecastr/SUEP/JPsi -n 100 -c 3000 -m mu -x /usr/local/pythia8312/SUEP/JPsi_DiMu -s /eos/user/g/gdecastr/HepMCSamples/singularityImages/suep-generator.sif"
   exit 1
 }
 
@@ -33,6 +34,7 @@ output_dir=""
 eos_dir=""
 mode="${DEFAULT_MODE}"
 executable_path=""
+sif_image=""
 
 # Parse command-line arguments
 while [[ "$#" -gt 0 ]]; do
@@ -63,6 +65,10 @@ while [[ "$#" -gt 0 ]]; do
       ;;
     -x|--exe-path)
       executable_path="$2"
+      shift 2
+      ;;
+    -s|--sif)
+      sif_image="$2"
       shift 2
       ;;
     -h|--help)
@@ -102,6 +108,16 @@ elif [[ -z "${executable_path}" ]]; then
   executable_path="/usr/local/pythia8312/SUEP/${executable}"
 fi
 
+# Prefer explicit SIF image via env or CLI; else use docker://<image>
+if [[ -n "${SIF_IMAGE}" && -z "${sif_image}" ]]; then
+  sif_image="${SIF_IMAGE}"
+fi
+if [[ -n "${sif_image}" ]]; then
+  container_spec="${sif_image}"
+else
+  container_spec="docker://${docker_image}"
+fi
+
 # Normalize EOS path: if not already root://, choose appropriate host
 if [[ "$eos_dir" != root://* ]]; then
   if [[ "$eos_dir" == /eos/user/* ]]; then
@@ -137,7 +153,14 @@ echo "Number of Runs: $num_runs"
 echo "Events per Run: $events"
 echo "Flavor/Mode: $mode (executable: $executable)"
 echo "Entrypoint Path: $executable_path"
+echo "Container Spec: $container_spec"
 echo ""
+
+# Runtime env for Pythia inside the container
+PYTHIA_PREFIX="/usr/local/pythia8312"
+RUNTIME_LD_LIBRARY_PATH="${PYTHIA_PREFIX}/lib:/usr/local/lib"
+RUNTIME_PYTHIA8DATA="${PYTHIA_PREFIX}/share/Pythia8/xmldoc"
+RUNTIME_LHAPDF_DATA_PATH="/usr/local/share/LHAPDF"
 
 run_in_container() {
   local outfile="$1"
@@ -146,23 +169,43 @@ run_in_container() {
 
   # Prefer Apptainer/Singularity on batch nodes; fall back to Docker/Podman
   if command -v apptainer >/dev/null 2>&1; then
-    echo "Using apptainer with image: docker://${docker_image}"
-    apptainer exec -B "${output_dir}:/app/output" "docker://${docker_image}" \
+    echo "Using apptainer with: ${container_spec}"
+    apptainer exec \
+      --env LD_LIBRARY_PATH="${RUNTIME_LD_LIBRARY_PATH}" \
+      --env PYTHIA8="${PYTHIA_PREFIX}" \
+      --env PYTHIA8DATA="${RUNTIME_PYTHIA8DATA}" \
+      --env LHAPDF_DATA_PATH="${RUNTIME_LHAPDF_DATA_PATH}" \
+      -B "${output_dir}:/app/output" "${container_spec}" \
       "${executable_path}" "/app/output/${outfile}" "${seed}" "${nevt}"
     return $?
   elif command -v singularity >/dev/null 2>&1; then
-    echo "Using singularity with image: docker://${docker_image}"
-    singularity exec -B "${output_dir}:/app/output" "docker://${docker_image}" \
+    echo "Using singularity with: ${container_spec}"
+    singularity exec \
+      --env LD_LIBRARY_PATH="${RUNTIME_LD_LIBRARY_PATH}" \
+      --env PYTHIA8="${PYTHIA_PREFIX}" \
+      --env PYTHIA8DATA="${RUNTIME_PYTHIA8DATA}" \
+      --env LHAPDF_DATA_PATH="${RUNTIME_LHAPDF_DATA_PATH}" \
+      -B "${output_dir}:/app/output" "${container_spec}" \
       "${executable_path}" "/app/output/${outfile}" "${seed}" "${nevt}"
     return $?
   elif command -v docker >/dev/null 2>&1; then
     echo "Using docker with image: ${docker_image}"
-    docker run --rm -v "${output_dir}:/app/output" --entrypoint "${executable_path}" \
+    docker run --rm \
+      -e LD_LIBRARY_PATH="${RUNTIME_LD_LIBRARY_PATH}" \
+      -e PYTHIA8="${PYTHIA_PREFIX}" \
+      -e PYTHIA8DATA="${RUNTIME_PYTHIA8DATA}" \
+      -e LHAPDF_DATA_PATH="${RUNTIME_LHAPDF_DATA_PATH}" \
+      -v "${output_dir}:/app/output" --entrypoint "${executable_path}" \
       "${docker_image}" "/app/output/${outfile}" "${seed}" "${nevt}"
     return $?
   elif command -v podman >/dev/null 2>&1; then
     echo "Using podman with image: ${docker_image}"
-    podman run --rm -v "${output_dir}:/app/output" --entrypoint "${executable_path}" \
+    podman run --rm \
+      -e LD_LIBRARY_PATH="${RUNTIME_LD_LIBRARY_PATH}" \
+      -e PYTHIA8="${PYTHIA_PREFIX}" \
+      -e PYTHIA8DATA="${RUNTIME_PYTHIA8DATA}" \
+      -e LHAPDF_DATA_PATH="${RUNTIME_LHAPDF_DATA_PATH}" \
+      -v "${output_dir}:/app/output" --entrypoint "${executable_path}" \
       "${docker_image}" "/app/output/${outfile}" "${seed}" "${nevt}"
     return $?
   else
