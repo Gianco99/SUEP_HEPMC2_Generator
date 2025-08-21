@@ -24,7 +24,6 @@ DEFAULT_LOCAL_OUT_DIRS = {
 
 # Condor bits
 JOB_FLAVOUR = "workday"  # tweak if needed
-SINGULARITY_IMAGE = "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cat/cmssw-lxplus/cmssw-el7-lxplus:latest/"
 
 
 def write_wrapper(path: str, image: str, local_out_rel: str, eos_dest: str, mode: str,
@@ -53,7 +52,6 @@ def write_condor_submit(sub_path: str, scripts_dir: str):
     lines = []
     lines.append("universe              = vanilla")
     lines.append(f"+JobFlavour          = {JOB_FLAVOUR}")
-    lines.append(f'MY.SingularityImage   = "{SINGULARITY_IMAGE}"')
     lines.append("getenv                = True")
     lines.append("use_x509userproxy     = True")  # so xrdcp to EOS works
     lines.append("x509userproxy         = $ENV(X509_USER_PROXY)")
