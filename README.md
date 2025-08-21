@@ -22,7 +22,7 @@ This is where the fun begins. There is a file named `DockerFile` which performs 
    * Build Pythia8 with LHAPDF compatibility
    * Compile the SUEP_generator repo against our Pythia install
 
-You can build this Docker image, which we will call `suep-generator-ZH`, by running the command below:
+You can build this Docker image, which we will call `suep-generator-zh`, by running the command below:
 
 ```bash
 cd SUEP_HEPMC2_Generator
@@ -31,7 +31,7 @@ docker build -t suep-generator-zh .
 
 As the name implies, we will use `generateSamples.sh` to generate our HEPMC SUEP samples. The arguments of this script are described in detail below:
 
-   * -i: The name of the image (the default is suep-generator-ZH)
+   * -i: The name of the image (the default is suep-generator-zh)
    * -f: The Pythia cards used to define the decay mode of the dark photons (A'). The different cards can be found in the path `SUEP_HEPMC2_Generator/suep_generator/decay_cards`.
    * -mD: The mass of the dark meson - $m_{\phi} \in [2m_{A'}, 8]$ GeV
    * -T: The Boltzmann temperature - $T_D \in [m_{\phi}/4, 4m_{\phi}]$ GeV
@@ -47,7 +47,7 @@ Directly run the `generateSamples.sh` command (without using the optional `-e` a
 
 ```bash
 cd SUEP_HEPMC2_Generator
-bash generateSamples.sh -i suep-generator-ZH -f decay_darkphoton_hadronic.cmnd --mD 2.0 --T 2.0 -o /path/to/output -n 100 -c 2000
+bash generateSamples.sh -i suep-generator-zh -f decay_darkphoton_hadronic.cmnd --mD 2.0 --T 2.0 -o /path/to/output -n 100 -c 2000
 ```
 
 ### Lxplus Users
@@ -56,7 +56,7 @@ EOS is not compatible with Docker images and AFS has very limited space. To get 
 First, replace line 3 of `autoGenerateSamples.sh` with our own custom `generateSamples.sh` command. In the line 3 example given below, we produce 100 files with 2000 events corresponding to SUEP decays generated using the hadronic decay mode with $m_{\phi} = T_D = 2$ GeV. The output files are temporarily sent to the AFS path denoted by the `-o` argument and then copied via `xrdcp` to their permanent home in the EOS path denoted by the `-e` argument.
 
 ```bash
-spawn bash generateSamples.sh -i suep-production-ZH -f decay_darkphoton_hadronic.cmnd --mD 2.0 --T 2.0 -o /path/to/AFS/output -e /path/to/EOS/output -n 100 -c 2000
+spawn bash generateSamples.sh -i suep-production-zh -f decay_darkphoton_hadronic.cmnd --mD 2.0 --T 2.0 -o /path/to/AFS/output -e /path/to/EOS/output -n 100 -c 2000
 ```
 
 Then, replace the `MYPASSWORD` string in line 5 of `autoGenerateSamples.sh` with the PEM password. 
