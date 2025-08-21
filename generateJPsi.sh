@@ -17,10 +17,11 @@ usage() {
   echo "  -n NUM_RUNS      Number of runs (default: ${DEFAULT_NUM_RUNS})"
   echo "  -c EVENTS        Events per run (default: ${DEFAULT_EVENTS})"
   echo "  -m MODE          Channel: mu or ele (default: ${DEFAULT_MODE})"
+  echo "  -x EXE_PATH     In-image executable path (default: /usr/local/pythia8312/SUEP/<exe>)"
   echo "  -h               Display this help message"
   echo ""
   echo "Example:"
-  echo "  $0 -i my-image -o /path/to/output -e /eos/user/g/gdecastr/SUEP/JPsi -n 100 -c 3000 -m mu"
+  echo "  $0 -i my-image -o /path/to/output -e /eos/user/g/gdecastr/SUEP/JPsi -n 100 -c 3000 -m mu -x /usr/local/pythia8312/SUEP/JPsi_DiMu"
   exit 1
 }
 
@@ -31,6 +32,7 @@ events="${DEFAULT_EVENTS}"
 output_dir=""
 eos_dir=""
 mode="${DEFAULT_MODE}"
+executable_path=""
 
 # Parse command-line arguments
 while [[ "$#" -gt 0 ]]; do
@@ -57,6 +59,10 @@ while [[ "$#" -gt 0 ]]; do
       ;;
     -m|--mode)
       mode="$2"
+      shift 2
+      ;;
+    -x|--exe-path)
+      executable_path="$2"
       shift 2
       ;;
     -h|--help)
@@ -89,6 +95,13 @@ case "$mode" in
     ;;
 esac
 
+# Choose in-image executable path (env override > CLI > default)
+if [[ -n "${EXECUTABLE_PATH}" ]]; then
+  executable_path="${EXECUTABLE_PATH}"
+elif [[ -z "${executable_path}" ]]; then
+  executable_path="/usr/local/pythia8312/SUEP/${executable}"
+fi
+
 # Prepend the EOS prefix
 eos_dir="root://eosuser.cern.ch/${eos_dir}"
 
@@ -115,6 +128,7 @@ echo "EOS Directory: $eos_dir"
 echo "Number of Runs: $num_runs"
 echo "Events per Run: $events"
 echo "Flavor/Mode: $mode (executable: $executable)"
+echo "Entrypoint Path: $executable_path"
 echo ""
 
 # Loop to generate the random seeds and run the Docker container
@@ -128,7 +142,7 @@ for ((i=1; i<=num_runs; i++)); do
   echo "Run #$i: Seed=$random_seed, Output File=$output_file"
   
   # Run the Docker command with the random seed
-  docker run --rm -v "${output_dir}:/app/output" --entrypoint "/app/${executable}" -it "${docker_image}" "/app/output/${output_file}" "${random_seed}" "${events}"
+  docker run --rm -v "${output_dir}:/app/output" --entrypoint "${executable_path}" -it "${docker_image}" "/app/output/${output_file}" "${random_seed}" "${events}"
   
   # Check if Docker run was successful
   if [[ $? -ne 0 ]]; then
