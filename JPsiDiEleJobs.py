@@ -20,7 +20,7 @@ DEFAULT_LOCAL_OUT_DIRS = {
 }
 
 # Condor bits
-JOB_FLAVOUR = "workday"  # tweak if needed
+JOB_FLAVOUR = "tomorrow"  # tweak if needed
 
 
 def write_wrapper(path: str, image: str, local_out_rel: str, eos_dest: str, mode: str,

@@ -10,20 +10,17 @@ DEFAULT_RUNS = 1
 DEFAULT_DOCKER_IMAGE = "suep-generator:latest"
 DEFAULT_EXEC_PATHS = {
     "mu":  "/usr/local/pythia8312/SUEP/JPsi_DiMu",
-    "ele": "/usr/local/pythia8312/SUEP/JPsi_DiEle",
 }
 DEFAULT_EOS_DEST = {
     "mu":  "/eos/user/g/gdecastr/HepMCSamples/JPsiDiMu",
-    "ele": "/eos/user/g/gdecastr/HepMCSamples/JPsiDiEle",
 }
 DEFAULT_OUT_SCRIPT_DIR = os.path.expanduser("~/JPsi_CondorJobs")
 DEFAULT_LOCAL_OUT_DIRS = {
     "mu":  "output_JPsiDiMu",
-    "ele": "output_JPsiDiEle",
 }
 
 # Condor bits
-JOB_FLAVOUR = "workday"  # tweak if needed
+JOB_FLAVOUR = "tomorrow"  # tweak if needed
 
 
 def write_wrapper(path: str, image: str, local_out_rel: str, eos_dest: str, mode: str,
