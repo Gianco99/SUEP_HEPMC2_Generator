@@ -244,7 +244,7 @@ for ((i=1; i<=num_runs; i++)); do
   fi
   
   # Copy the output to EOS with the random seed in the file name
-  dest="${eos_dir%/}/${output_file}"
+  dest="//${eos_dir%/}/${output_file}"
   xrdcp -f "${output_dir}/${output_file}" "${dest}"
   
   if [[ $? -ne 0 ]]; then
