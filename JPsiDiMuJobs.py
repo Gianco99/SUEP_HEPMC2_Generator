@@ -56,7 +56,6 @@ def write_condor_submit(sub_path: str, scripts_dir: str):
     lines.append("universe              = vanilla")
     lines.append(f"+JobFlavour          = {JOB_FLAVOUR}")
     lines.append("getenv                = True")
-    lines.append("use_x509userproxy     = True")
     lines.append("transfer_executable   = True")
     # Ship the generate script to the worker
     lines.append("transfer_input_files  = generateJPsi.sh")
