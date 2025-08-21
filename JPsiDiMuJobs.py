@@ -27,7 +27,7 @@ JOB_FLAVOUR = "workday"  # tweak if needed
 
 
 def write_wrapper(path: str, image: str, local_out_rel: str, eos_dest: str, mode: str,
-                  events_per_job: int, exec_path: str):
+                  events_per_job: int, exec_path: str, sif_path: str = None):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w") as sh:
         sh.write("#!/bin/bash\n")
@@ -39,11 +39,14 @@ def write_wrapper(path: str, image: str, local_out_rel: str, eos_dest: str, mode
         sh.write("mkdir -p \"$OUTDIR\"\n")
         # Export the in-image binary path for generateJPsi.sh to consume
         sh.write(f"export EXECUTABLE_PATH='{exec_path}'\n")
-        # Single run with chosen chunk size, writing to scratch OUTDIR
-        sh.write(
-            "bash generateJPsi.sh "
-            f"-i '{image}' -o \"$OUTDIR\" -e '{eos_dest}' -n 1 -c {events_per_job} -m {mode}\n"
-        )
+        # If provided, point generateJPsi.sh to a local .sif image (avoids docker.io pulls)
+        if sif_path is not None:
+            sh.write(f"export SIF_IMAGE='{sif_path}'\n")
+            sh.write("bash generateJPsi.sh "
+                     f"-i '{image}' -o \"$OUTDIR\" -e '{eos_dest}' -n 1 -c {events_per_job} -m {mode} -s '{sif_path}'\n")
+        else:
+            sh.write("bash generateJPsi.sh "
+                     f"-i '{image}' -o \"$OUTDIR\" -e '{eos_dest}' -n 1 -c {events_per_job} -m {mode}\n")
         sh.write("status=$?; echo \"[$(date)] Exit status: $status\"; exit $status\n")
     os.chmod(path, 0o755)
 
@@ -52,6 +55,8 @@ def write_condor_submit(sub_path: str, scripts_dir: str):
     lines = []
     lines.append("universe              = vanilla")
     lines.append(f"+JobFlavour          = {JOB_FLAVOUR}")
+    lines.append("getenv                = True")
+    lines.append("use_x509userproxy     = True")
     lines.append("transfer_executable   = True")
     # Ship the generate script to the worker
     lines.append("transfer_input_files  = generateJPsi.sh")
@@ -74,6 +79,7 @@ def main():
     ap.add_argument("--runs", type=int, default=DEFAULT_RUNS, help="Number of jobs to create and queue")
     ap.add_argument("--image", default=DEFAULT_DOCKER_IMAGE, help="Docker image tag")
     ap.add_argument("--exe-path", default=None, help="In-image executable path (overrides default for mode)")
+    ap.add_argument("--sif", default=None, help="Path to a Singularity/Apptainer .sif image (avoids docker.io pulls)")
     ap.add_argument("--out-script-dir", default=DEFAULT_OUT_SCRIPT_DIR, help="Where to write wrapper scripts and submit file")
     ap.add_argument("--local-out-dir", default=None, help="Relative temp output dir; defaults per mode (stored in Condor scratch)")
     ap.add_argument("--eos-dest", default=None, help="EOS destination directory; defaults per mode")
@@ -84,6 +90,7 @@ def main():
     exec_path = args.exe_path or DEFAULT_EXEC_PATHS[mode]
     eos_dest = args.eos_dest or DEFAULT_EOS_DEST[mode]
     local_out_rel = args.local_out_dir or DEFAULT_LOCAL_OUT_DIRS[mode]
+    sif_path = args.sif
 
     # Prepare job directory
     jobdir = os.path.join(args.out_script_dir, mode)
@@ -109,6 +116,7 @@ def main():
             mode=mode,
             events_per_job=args.events,
             exec_path=exec_path,
+            sif_path=sif_path,
         )
 
     # Submit file
@@ -121,6 +129,7 @@ def main():
     print(f"Runs (jobs)          : {args.runs}")
     print(f"Image                : {args.image}")
     print(f"Exec path in image   : {exec_path}")
+    print(f"Container spec        : {args.sif or 'docker://'+args.image}")
     print(f"Temp out (scratch)   : {local_out_rel}")
     print(f"EOS destination      : {eos_dest}")
     print(f"Scripts directory    : {jobdir}")
