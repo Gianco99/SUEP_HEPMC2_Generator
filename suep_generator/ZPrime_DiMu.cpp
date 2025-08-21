@@ -14,35 +14,34 @@ using namespace boost::placeholders; // Use the recommended namespace for placeh
 
 using namespace Pythia8;
 
-// Apply JPsi -> e+ e- filters similar to CMSSW fragment
-static bool passJPsiEE(const Pythia8::Event& ev) {
-    // Kinematic cuts
-    const double minPt = 1.0;   // GeV
-    const double maxPt = 10.0;  // GeV
+// Apply Z' -> mu+ mu- filter similar to CMSSW fragment
+static bool passZPrimeMuMu(const Pythia8::Event& ev) {
+    const int zprimeId = 32;      // Z'
+    const double minPt = 1000.0;  // GeV
     const double maxAbsEta = 2.5;
 
     for (int i = 0; i < ev.size(); ++i) {
-        if (ev[i].id() != 443) continue; // J/psi (status/resonance not enforced explicitly)
+        if (ev[i].id() != zprimeId) continue; // require Z' mother
         int d1 = ev[i].daughter1();
         int d2 = ev[i].daughter2();
-        if (d1 <= 0 || d2 <= 0) continue; // must have daughters recorded
+        if (d1 <= 0 || d2 <= 0) continue;
 
-        bool hasEPlus = false;
-        bool hasEMinus = false;
+        bool hasMuPlus = false;
+        bool hasMuMinus = false;
 
         for (int d = d1; d <= d2; ++d) {
             if (d < 0 || d >= ev.size()) continue;
             int id = ev[d].id();
-            if (id == 11 || id == -11) {
+            if (id == 13 || id == -13) {
                 double pt = ev[d].pT();
                 double eta = ev[d].eta();
-                if (pt >= minPt && pt <= maxPt && std::abs(eta) <= maxAbsEta) {
-                    if (id == 11)  hasEMinus = true;   // e-
-                    if (id == -11) hasEPlus  = true;   // e+
+                if (pt >= minPt && std::abs(eta) <= maxAbsEta) {
+                    if (id == 13)  hasMuMinus = true;   // mu-
+                    if (id == -13) hasMuPlus  = true;   // mu+
                 }
             }
         }
-        if (hasEPlus && hasEMinus) return true; // Found a qualifying JPsi -> e+ e-
+        if (hasMuPlus && hasMuMinus) return true; // qualifying Z' -> mu+ mu-
     }
     return false;
 }
@@ -67,10 +66,18 @@ int main(int argc, char *argv[]) {
     // Basic setup for 13 TeV collisions
     pythia.readString("Beams:eCM = 13000.");
 
-    // Charmonium (J/psi) production with feed-down; decay only to e+ e-
-    pythia.readString("Charmonium:all = on");
-    pythia.readString("443:onMode = off");
-    pythia.readString("443:onIfMatch = 11 -11");
+    // Z' production and decays (physics only — no tune changes)
+    pythia.readString("NewGaugeBoson:ffbar2gmZZprime = on");
+    pythia.readString("Zprime:gmZmode = 3");
+
+    // Z' properties
+    pythia.readString("32:m0 = 2500.0");
+    pythia.readString("32:mWidth = 200.0");
+
+    // Force Z' → ℓℓ only (allow both e+e- and μ+μ-, filtering to μμ below)
+    pythia.readString("32:onMode = off");
+    pythia.readString("32:onIfMatch = 11 -11");
+    pythia.readString("32:onIfMatch = 13 -13");
 
     // Random seed settings
     pythia.readString("Random:setSeed = on");
@@ -168,9 +175,8 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
-        // Apply JPsi -> e+ e- filters (pT/eta cuts on daughters)
-        if (!passJPsiEE(pythia.event)) {
-            // Skip writing this event if it doesn't satisfy the filters
+        // Apply Z' -> mu+ mu- filters (pT/eta cuts on daughters)
+        if (!passZPrimeMuMu(pythia.event)) {
             continue;
         }
 

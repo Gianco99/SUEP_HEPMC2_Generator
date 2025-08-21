@@ -64,22 +64,22 @@ COPY ./suep_generator/* .
 RUN cp $PYTHIA8/examples/Makefile ./Makefile && \
     cp $PYTHIA8/examples/Makefile.inc ./Makefile.inc && \
     cat >> Makefile <<'EOF'
-JPsi_DiEle: JPsi_DiEle.cpp $(PREFIX_LIB)/libpythia8.a
+ZPrime_DiEle: ZPrime_DiEle.cpp $(PREFIX_LIB)/libpythia8.a
 ifeq ($(HEPMC2_USE),true)
-	$(CXX) JPsi_DiEle.cpp -o JPsi_DiEle $(CXX_COMMON) \
+	$(CXX) ZPrime_DiEle.cpp -o ZPrime_DiEle $(CXX_COMMON) \
 	-I$(HEPMC2_INCLUDE) -L$(HEPMC2_LIB) -Wl,-rpath,$(HEPMC2_LIB) -lHepMC \
 	$(GZIP_INC) $(GZIP_FLAGS)
 else
-	@echo "Error: JPsi_DiEle requires HEPMC2"
+	@echo "Error: ZPrime_DiEle requires HEPMC2"
 endif
 
-JPsi_DiMu: JPsi_DiMu.cpp $(PREFIX_LIB)/libpythia8.a
+ZPrime_DiMu: ZPrime_DiMu.cpp $(PREFIX_LIB)/libpythia8.a
 ifeq ($(HEPMC2_USE),true)
-	$(CXX) JPsi_DiMu.cpp -o JPsi_DiMu $(CXX_COMMON) \
+	$(CXX) ZPrime_DiMu.cpp -o ZPrime_DiMu $(CXX_COMMON) \
 	-I$(HEPMC2_INCLUDE) -L$(HEPMC2_LIB) -Wl,-rpath,$(HEPMC2_LIB) -lHepMC \
 	$(GZIP_INC) $(GZIP_FLAGS)
 else
-	@echo "Error: JPsi_DiMu requires HEPMC2"
+	@echo "Error: ZPrime_DiMu requires HEPMC2"
 endif
 EOF
 
@@ -93,7 +93,7 @@ RUN sed -i 's|/afs/cern.ch/work/b/bmaier/public/xMaurizio/pythia/pythia8244/|/us
 RUN sed -i 's|CXX=/cvmfs/sft.cern.ch/lcg/releases/gcc/8.3.0-cebb0/x86_64-centos7/bin/g++|CXX=g++|' Makefile.inc
 
 # Build both executables
-RUN make JPsi_DiEle JPsi_DiMu
+RUN make ZPrime_DiEle ZPrime_DiMu
 
-# Provide an interactive shell by default; run JPsi_DiEle or JPsi_DiMu manually
+# Provide an interactive shell by default; run ZPrime_DiEle or ZPrime_DiMu manually
 ENTRYPOINT ["/bin/bash"]
