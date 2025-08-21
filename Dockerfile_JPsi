@@ -62,13 +62,27 @@ COPY ./suep_generator/* .
 
 # Copy the example Makefile from Pythia’s examples and patch it
 RUN cp $PYTHIA8/examples/Makefile ./Makefile && \
-    sed -i '/^all:/i simpleDY: simpleDY.cpp $(PREFIX_LIB)\/libpythia8.a' Makefile && \
-    sed -i '/^simpleDY:/a ifeq ($(HEPMC2_USE),true)' Makefile && \
-    sed -i '/^ifeq ($(HEPMC2_USE),true)/a\\
-\t$(CXX) simpleDY.cpp -o simpleDY $(CXX_COMMON) \\\n\t-I$(HEPMC2_INCLUDE) -L$(HEPMC2_LIB) -Wl,-rpath,$(HEPMC2_LIB) -lHepMC \\\n\t$(GZIP_INC) $(GZIP_FLAGS)' Makefile && \
-    sed -i '/$(GZIP_FLAGS)/a\\
-else\n\t@echo "Error: simpleDY requires HEPMC2"\nendif' Makefile && \
+    cat >> Makefile << 'EOF' && \
     cat Makefile
+
+JPsi_DiEle: JPsi_DiEle.cpp $(PREFIX_LIB)/libpythia8.a
+ifeq ($(HEPMC2_USE),true)
+	$(CXX) JPsi_DiEle.cpp -o JPsi_DiEle $(CXX_COMMON) \
+	-I$(HEPMC2_INCLUDE) -L$(HEPMC2_LIB) -Wl,-rpath,$(HEPMC2_LIB) -lHepMC \
+	$(GZIP_INC) $(GZIP_FLAGS)
+else
+	@echo "Error: JPsi_DiEle requires HEPMC2"
+endif
+
+JPsi_DiMu: JPsi_DiMu.cpp $(PREFIX_LIB)/libpythia8.a
+ifeq ($(HEPMC2_USE),true)
+	$(CXX) JPsi_DiMu.cpp -o JPsi_DiMu $(CXX_COMMON) \
+	-I$(HEPMC2_INCLUDE) -L$(HEPMC2_LIB) -Wl,-rpath,$(HEPMC2_LIB) -lHepMC \
+	$(GZIP_INC) $(GZIP_FLAGS)
+else
+	@echo "Error: JPsi_DiMu requires HEPMC2"
+endif
+EOF
 
 # Replace old references in Makefile.inc (if needed)
 RUN sed -i 's|/afs/cern.ch/work/b/bmaier/public/xMaurizio/pythia/pythia8244/|/usr/local/pythia8312/|g' Makefile.inc
@@ -76,8 +90,8 @@ RUN sed -i 's|/afs/cern.ch/work/b/bmaier/public/xMaurizio/pythia/pythia8244/|/us
 # Ensure the use of local g++
 RUN sed -i 's|CXX=/cvmfs/sft.cern.ch/lcg/releases/gcc/8.3.0-cebb0/x86_64-centos7/bin/g++|CXX=g++|' Makefile.inc
 
-# Build the simpleDY executable
-RUN make simpleDY
+# Build both executables
+RUN make JPsi_DiEle JPsi_DiMu
 
-# Finally, set the entry point to run simpleDY by default
-ENTRYPOINT ["./simpleDY"]
+# Provide an interactive shell by default; run JPsi_DiEle or JPsi_DiMu manually
+ENTRYPOINT ["/bin/bash"]

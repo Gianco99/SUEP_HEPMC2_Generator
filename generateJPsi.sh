@@ -4,6 +4,7 @@
 DEFAULT_DOCKER_IMAGE="suep-generator"
 DEFAULT_NUM_RUNS=500
 DEFAULT_EVENTS=2000
+DEFAULT_MODE="mu"
 
 # Function to display usage
 usage() {
@@ -11,14 +12,15 @@ usage() {
   echo ""
   echo "Options:"
   echo "  -i IMAGE         Docker image (default: ${DEFAULT_DOCKER_IMAGE})"
-  echo "  -o OUTPUT_DIR    Output directory (default: \$(pwd)/output)"
+  echo "  -o OUTPUT_DIR    Output directory (default: $(pwd)/output)"
   echo "  -e EOS_DIR       EOS directory (required)"
   echo "  -n NUM_RUNS      Number of runs (default: ${DEFAULT_NUM_RUNS})"
   echo "  -c EVENTS        Events per run (default: ${DEFAULT_EVENTS})"
+  echo "  -m MODE          Channel: mu or ele (default: ${DEFAULT_MODE})"
   echo "  -h               Display this help message"
   echo ""
   echo "Example:"
-  echo "  $0 -i my-image -f my_input.cmnd -o /path/to/output -e /eos/path -n 100 -c 3000"
+  echo "  $0 -i my-image -o /path/to/output -e /eos/user/g/gdecastr/SUEP/JPsi -n 100 -c 3000 -m mu"
   exit 1
 }
 
@@ -28,6 +30,7 @@ num_runs="${DEFAULT_NUM_RUNS}"
 events="${DEFAULT_EVENTS}"
 output_dir=""
 eos_dir=""
+mode="${DEFAULT_MODE}"
 
 # Parse command-line arguments
 while [[ "$#" -gt 0 ]]; do
@@ -52,6 +55,10 @@ while [[ "$#" -gt 0 ]]; do
       events="$2"
       shift 2
       ;;
+    -m|--mode)
+      mode="$2"
+      shift 2
+      ;;
     -h|--help)
       usage
       ;;
@@ -67,6 +74,20 @@ if [[ -z "$eos_dir" ]]; then
   echo "Error: EOS_DIR (-e) is required."
   usage
 fi
+
+# Choose executable based on mode
+case "$mode" in
+  mu|MU|Mu)
+    executable="JPsi_DiMu"
+    ;;
+  ele|ELE|Ele|electron|Electron|EE|ee)
+    executable="JPsi_DiEle"
+    ;;
+  *)
+    echo "Error: invalid mode '$mode'. Use 'mu' or 'ele'."
+    exit 1
+    ;;
+esac
 
 # Prepend the EOS prefix
 eos_dir="root://eosuser.cern.ch/${eos_dir}"
@@ -93,6 +114,7 @@ echo "Output Directory: $output_dir"
 echo "EOS Directory: $eos_dir"
 echo "Number of Runs: $num_runs"
 echo "Events per Run: $events"
+echo "Flavor/Mode: $mode (executable: $executable)"
 echo ""
 
 # Loop to generate the random seeds and run the Docker container
@@ -106,7 +128,7 @@ for ((i=1; i<=num_runs; i++)); do
   echo "Run #$i: Seed=$random_seed, Output File=$output_file"
   
   # Run the Docker command with the random seed
-  docker run --rm -v "${output_dir}:/app/output" -it "${docker_image}" "/app/output/${output_file}" "${random_seed}" "${events}"
+  docker run --rm -v "${output_dir}:/app/output" --entrypoint "/app/${executable}" -it "${docker_image}" "/app/output/${output_file}" "${random_seed}" "${events}"
   
   # Check if Docker run was successful
   if [[ $? -ne 0 ]]; then
