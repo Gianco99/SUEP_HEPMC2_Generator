@@ -10,20 +10,17 @@ DEFAULT_RUNS = 1
 DEFAULT_DOCKER_IMAGE = "suep-generator:latest"
 DEFAULT_EXEC_PATHS = {
     "mu":  "/usr/local/pythia8312/SUEP/ZPrime_DiMu",
-    "ele": "/usr/local/pythia8312/SUEP/ZPrime_DiEle",
 }
 DEFAULT_EOS_DEST = {
     "mu":  "/eos/user/g/gdecastr/HepMCSamples/ZPrimeDiMu",
-    "ele": "/eos/user/g/gdecastr/HepMCSamples/ZPrimeDiEle",
 }
 DEFAULT_OUT_SCRIPT_DIR = os.path.expanduser("~/ZPrime_CondorJobs")
 DEFAULT_LOCAL_OUT_DIRS = {
     "mu":  "output_ZPrimeDiMu",
-    "ele": "output_ZPrimeDiEle",
 }
 
 # Condor bits
-JOB_FLAVOUR = "workday"  # tweak if needed
+JOB_FLAVOUR = "tomorrow"  # tweak if needed
 
 
 def write_wrapper(path: str, image: str, local_out_rel: str, eos_dest: str, mode: str,
@@ -54,7 +51,7 @@ def write_wrapper(path: str, image: str, local_out_rel: str, eos_dest: str, mode
 def write_condor_submit(sub_path: str, scripts_dir: str, suppress_logs: bool = False):
     lines = []
     lines.append("universe              = vanilla")
-    lines.append(f"+JobFlavour          = {JOB_FLAVOUR}")
+    lines.append(f'+JobFlavour          = "{JOB_FLAVOUR}"')
     lines.append("getenv                = True")
     lines.append("use_x509userproxy     = True")
     lines.append("transfer_executable   = True")
