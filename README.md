@@ -49,3 +49,18 @@ Directly run the `generateSamples.sh` command (without using the optional `-e` a
 cd SUEP_HEPMC2_Generator
 bash generateSamples.sh -i suep-generator-WH -f decay_darkphoton_hadronic.cmnd --mD 2.0 --T 2.0 -o /path/to/output -n 100 -c 2000
 ```
+
+### Unable to use Docker at all?
+
+We have found a series of commands that generates an apptainer image that performs the same functionality! Run these first two commands after building the docker image to convert it into a more versatile apptainer image. Then, you can execute the sample generation using the `exec` command to actually perform the sample generation.
+
+```bash
+podman save --format oci-archive -o /my/output/path/suep-generator.tar localhost/suep-generator:latest
+
+apptainer build "/my/output/path/suep-generator.sif" oci-archive://"suep-generator.tar"
+
+apptainer exec --env LD_LIBRARY_PATH=/usr/local/pythia8312/lib:/usr/local/lib --env PYTHIA8=/usr/local/pythia8312 --env PYTHIA8DATA=/usr/local/pythia8312/share/Pythia8/xmldoc -B test_output:/app/output /my/output/path/suep-generator.sif /usr/local/pythia8312/SUEP/JPsi_DiMu /app/output/test.hepmc 12345 10
+
+```
+
+This will only output a single file using the given seed and the number of events. However, this can be easily parallellized for your job submission system of choice.
