@@ -14,6 +14,18 @@ using namespace boost::placeholders; // Use the recommended namespace for placeh
 
 using namespace Pythia8;
 
+// Mimic CMSSW oniafilter: require a J/psi (id=443) with status 2 present in the event
+static bool hasJPsiStatus2(const Pythia8::Event& ev) {
+    for (int i = 0; i < ev.size(); ++i) {
+        if (ev[i].id() == 443 && ev[i].status() == 2) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Mimic CMSSW PythiaDauVFilter for J/psi -> e+ e- (IDs 11, -11)
+
 // Apply JPsi -> e+ e- filters similar to CMSSW fragment
 static bool passJPsiEE(const Pythia8::Event& ev) {
     // Kinematic cuts
@@ -166,6 +178,11 @@ int main(int argc, char *argv[]) {
         if (!pythia.next()) {
             std::cerr << "Pythia event generation failed at event " << i << "\n";
             continue;
+        }
+
+        // CMSSW oniafilter: require a status-2 J/psi in the event
+        if (!hasJPsiStatus2(pythia.event)) {
+            continue; // skip events without the desired onium state
         }
 
         // Apply JPsi -> e+ e- filters (pT/eta cuts on daughters)
