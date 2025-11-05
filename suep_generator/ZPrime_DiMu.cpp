@@ -22,26 +22,24 @@ static bool passZPrimeMuMu(const Pythia8::Event& ev) {
 
     for (int i = 0; i < ev.size(); ++i) {
         if (ev[i].id() != zprimeId) continue; // require Z' mother
-        int d1 = ev[i].daughter1();
-        int d2 = ev[i].daughter2();
-        if (d1 <= 0 || d2 <= 0) continue;
+        const std::vector<int>& dlist = ev[i].daughterList();
+        if (dlist.size() != 2) continue; // CMSSW filter expects exactly two specified daughters
+        int dA = dlist[0];
+        int dB = dlist[1];
+        if (dA <= 0 || dB <= 0 || dA >= ev.size() || dB >= ev.size()) continue;
 
-        bool hasMuPlus = false;
-        bool hasMuMinus = false;
+        int idA = ev[dA].id();
+        int idB = ev[dB].id();
+        bool isMuPair = ( (idA == 13 && idB == -13) || (idA == -13 && idB == 13) );
+        if (!isMuPair) continue;
 
-        for (int d = d1; d <= d2; ++d) {
-            if (d < 0 || d >= ev.size()) continue;
-            int id = ev[d].id();
-            if (id == 13 || id == -13) {
-                double pt = ev[d].pT();
-                double eta = ev[d].eta();
-                if (pt >= minPt && std::abs(eta) <= maxAbsEta) {
-                    if (id == 13)  hasMuMinus = true;   // mu-
-                    if (id == -13) hasMuPlus  = true;   // mu+
-                }
-            }
+        double ptA  = ev[dA].pT();
+        double ptB  = ev[dB].pT();
+        double etaA = ev[dA].eta();
+        double etaB = ev[dB].eta();
+        if (ptA >= minPt && ptB >= minPt && std::abs(etaA) <= maxAbsEta && std::abs(etaB) <= maxAbsEta) {
+            return true;
         }
-        if (hasMuPlus && hasMuMinus) return true; // qualifying Z' -> mu+ mu-
     }
     return false;
 }
@@ -72,7 +70,8 @@ int main(int argc, char *argv[]) {
 
     // Z' properties
     pythia.readString("32:m0 = 2500.0");
-    pythia.readString("32:mWidth = 200.0");
+    pythia.readString("32:mWidth = 15.0");
+    pythia.readString("32:doForceWidth = on");
 
     // Force Z' → ℓℓ only (allow both e+e- and μ+μ-, filtering to μμ below)
     pythia.readString("32:onMode = off");
